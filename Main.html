@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CPM Exclusive Coin Dealer</title>
+    <style>
+        :root {
+            --primary: #ffcc00;
+            --dark: #0f0f0f;
+            --card: #1a1a1a;
+            --text: #ffffff;
+            --danger: #ff4444;
+            --success: #00ff88;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--dark);
+            color: var(--text);
+            margin: 0;
+            padding: 15px;
+            scroll-behavior: smooth;
+        }
+
+        header {
+            text-align: center;
+            padding: 30px 20px;
+            background: linear-gradient(180deg, #1a1a1a 0%, #0f0f0f 100%);
+            border-bottom: 3px solid var(--primary);
+            margin-bottom: 20px;
+            border-radius: 0 0 20px 20px;
+        }
+
+        header h1 {
+            margin: 0 0 5px 0;
+            font-size: 2rem;
+            letter-spacing: 1px;
+        }
+
+        header .subtitle {
+            margin: 0;
+            font-weight: bold;
+            color: var(--primary);
+        }
+
+        header .description {
+            font-size: 0.9rem;
+            color: #aaa;
+            max-width: 600px;
+            margin: 15px auto 0 auto;
+            line-height: 1.4;
+        }
+
+        /* Fixed Grid: Prevents stretching when search results are low */
+        .car-grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); 
+            gap: 20px; 
+            max-width: 1200px; 
+            margin: 0 auto; 
+        }
+
+        /* --- UPDATED CAR CARD STYLES FOR ANIMATION --- */
+        .car-card { 
+            background: var(--card); 
+            border-radius: 15px; 
+            padding: 15px; 
+            border: 1px solid #222; 
+            display: flex; 
+            flex-direction: column; 
+            justify-content: space-between; 
+            transition: transform 0.3s ease, background-color 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .car-card:hover {
+            transform: translateY(-5px) scale(1.02);
+            background-color: #252525;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.6), 0 0 10px rgba(255, 204, 0, 0.1);
+        }
+
+        .car-image-container { width: 100%; height: 180px; background: #000; border-radius: 10px; margin-bottom: 12px; overflow: hidden; border: 1px solid #333; }
+        .car-image-container img { width: 100%; height: 100%; object-fit: cover; }
+
+        .coin-price { background: rgba(255, 204, 0, 0.1); color: var(--primary); padding: 5px 10px; border-radius: 5px; display: inline-block; font-weight: bold; margin: 8px 0; }
+        
+        /* Floating Basket & Bouncy Animation */
+        @keyframes bounce {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+        }
+        .bounce-anim {
+            animation: bounce 0.4s ease;
+        }
+
+        #floating-basket {
+            position: fixed; bottom: 30px; right: 30px; width: 70px; height: 70px;
+            background: var(--primary); border-radius: 50%; display: none;
+            align-items: center; justify-content: center; cursor: pointer;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5); z-index: 2000;
+            transition: transform 0.2s ease, filter 0.2s ease;
+        }
+        #floating-basket:hover { filter: brightness(1.1); transform: scale(1.05); }
+        #floating-basket:active { transform: scale(0.95); }
+
+        #floating-basket img { width: 35px; height: 35px; }
+        .basket-badge {
+            position: absolute; top: 0; right: 0; background: var(--danger);
+            color: white; border-radius: 50%; width: 25px; height: 25px;
+            font-size: 0.8rem; display: flex; align-items: center; justify-content: center;
+            font-weight: bold; border: 2px solid var(--dark);
+        }
+
+        /* Controls */
+        .controls-container { max-width: 1000px; margin: 0 auto 25px auto; display: flex; flex-direction: column; gap: 10px; }
+        .sort-options { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+        .sort-btn { background: #222; color: #aaa; border: 1px solid #444; padding: 8px 15px; border-radius: 20px; cursor: pointer; font-size: 0.85rem; transition: 0.2s; }
+        .sort-btn:hover { background: #333; color: #fff; }
+        .sort-btn:active { transform: scale(0.95); }
+        .sort-btn.active { background: var(--primary); color: #000; border-color: var(--primary); }
+        #searchBar { width: 100%; padding: 15px; border-radius: 12px; border: 2px solid #333; background: #1a1a1a; color: white; font-size: 1.1rem; outline: none; box-sizing: border-box; transition: 0.3s; }
+        #searchBar:focus { border-color: var(--primary); box-shadow: 0 0 10px rgba(255, 204, 0, 0.2); }
+
+        /* --- UPDATED BUTTONS FOR CLICK ANIMATIONS --- */
+        .btn { cursor: pointer; border: none; padding: 12px; border-radius: 8px; font-weight: bold; margin-top: 8px; width: 100%; text-transform: uppercase; transition: transform 0.1s ease, filter 0.2s ease; }
+        .btn:hover { filter: brightness(1.1); }
+        .btn:active { transform: scale(0.96); } /* The "press" effect */
+        
+        .btn-add { background: var(--primary); color: #000; }
+        .btn-mod { background: #333; color: #fff; }
+        .btn-remove { background: var(--danger); color: white; padding: 5px 10px; font-size: 0.7rem; width: auto; border-radius: 4px; }
+
+        /* Modal & Flag Selector */
+        .modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #222; padding: 25px; border-radius: 20px; z-index: 1000; width: 90%; max-width: 450px; border: 1px solid var(--primary); max-height: 80vh; overflow-y: auto; }
+        .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 999; }
+        
+        .flag-picker-container { display: none; background: #111; padding: 10px; border-radius: 10px; margin-top: 10px; border: 1px solid #444; }
+        .flag-grid-internal { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; max-height: 200px; overflow-y: auto; padding: 5px; }
+        .flag-item { background: #1a1a1a; border: 1px solid #333; padding: 8px; font-size: 0.75rem; border-radius: 5px; cursor: pointer; text-align: center; transition: 0.2s; }
+        .flag-item:hover { border-color: var(--primary); transform: translateY(-2px); }
+        .flag-item.selected { background: var(--primary); color: #000; font-weight: bold; }
+
+        /* Basket View */
+        #basket { max-width: 600px; margin: 50px auto; background: var(--card); padding: 25px; border-radius: 15px; border: 1px solid #333; }
+        .basket-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #333; }
+        .summary-dashboard { background: #000; padding: 20px; border-radius: 12px; margin: 20px 0; border-left: 4px solid var(--primary); }
+        .total-rands { font-size: 1.8rem; color: var(--primary); font-weight: 800; }
+
+        /* Footer Links */
+        footer { margin-top: 50px; padding: 40px 20px; background: #111; text-align: center; border-radius: 20px 20px 0 0; }
+        .footer-links { display: flex; justify-content: center; gap: 20px; margin-bottom: 15px; flex-wrap: wrap; }
+        .footer-link { color: var(--primary); text-decoration: none; font-weight: bold; transition: 0.2s; }
+        .footer-link:hover { color: #fff; }
+        .legal-terms { display: flex; justify-content: center; gap: 15px; margin-bottom: 15px; }
+        .legal-terms a { color: #666; font-size: 0.85rem; text-decoration: none; transition: 0.2s; }
+        .legal-terms a:hover { color: var(--primary); }
+        .copyright { color: #555; font-size: 0.8rem; margin: 0; }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>CPM COIN DEALERSHIP</h1>
+    <p class="subtitle">Premium Vehicles | Bulk Discounts Applied</p>
+    <p class="description">Browse our exclusive collection of Car Parking Multiplayer vehicles. Customize your ride with W16 engine swaps, widebody kits, and country flags. The more cars you buy, the bigger your discount!</p>
+</header>
+
+<div id="floating-basket" onclick="scrollToBasket()">
+    <img src="https://i.ibb.co/SXLgFkxr/cart.png" alt="Cart">
+    <div class="basket-badge" id="badge-count">0</div>
+</div>
+
+<div class="controls-container">
+    <input type="text" id="searchBar" placeholder="Search for a car..." onkeyup="filterAndRender()">
+    <div class="sort-options">
+        <button class="sort-btn active" id="sort-name-asc" onclick="setSort('name-asc')">Name A-Z</button>
+        <button class="sort-btn" id="sort-name-desc" onclick="setSort('name-desc')">Name Z-A</button>
+        <button class="sort-btn" id="sort-price-asc" onclick="setSort('price-asc')">Coins: Low-High</button>
+        <button class="sort-btn" id="sort-price-desc" onclick="setSort('price-desc')">Coins: High-Low</button>
+    </div>
+</div>
+
+<div class="car-grid" id="car-list"></div>
+
+<div class="overlay" id="overlay" onclick="closeMod()"></div>
+<div class="modal" id="mod-modal">
+    <h3 style="margin-top:0">Custom Modifications</h3>
+    <label><input type="checkbox" id="mod-w16"> W16 Engine Swap</label><br><br>
+    <label><input type="checkbox" id="mod-bodykit"> Full Widebody Kit</label><br><br>
+    <label><input type="checkbox" id="mod-flag" onchange="toggleFlagPicker()"> Country Flag Mod</label>
+    
+    <div id="flag-picker-ui" class="flag-picker-container">
+        <p style="font-size: 0.8rem; color: #888; margin-bottom: 5px;">Select a Country:</p>
+        <div class="flag-grid-internal" id="flag-grid"></div>
+        <p id="current-selection" style="font-size: 0.8rem; color: var(--primary); margin-top: 8px;">No flag selected</p>
+    </div>
+
+    <button class="btn btn-add" style="margin-top:20px" onclick="confirmMod()">Add To Basket</button>
+</div>
+
+<div id="basket">
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <h2>Your Order</h2>
+        <button class="btn btn-mod" style="width:auto; padding: 5px 15px;" onclick="clearBasket()">Clear All</button>
+    </div>
+    
+    <div id="basket-content"></div>
+
+    <div class="summary-dashboard">
+        <div style="display:flex; justify-content:space-between"><span>Coins:</span><span id="total-coins" style="color:#aaa">0 Coins</span></div>
+        <div style="display:flex; justify-content:space-between; margin-top:10px;">
+            <span style="font-weight: bold;">TOTAL PAYABLE:</span>
+            <span class="total-rands" id="total-rands">R0</span>
+        </div>
+        <div id="savings-display" style="color:var(--success); font-size:0.8rem; margin-top:5px;"></div>
+    </div>
+
+    <form id="dealer-form">
+        <input type="text" id="u-name" placeholder="In-game Name (IGN)" required style="width: 100%; padding: 12px; margin: 10px 0 5px 0; background: #000; color: white; border: 1px solid #444; border-radius: 8px;">
+        <input type="text" id="u-contact" placeholder="Contact Details (WhatsApp/Discord Username)" required style="width: 100%; padding: 12px; margin: 5px 0 10px 0; background: #000; color: white; border: 1px solid #444; border-radius: 8px;">
+        <button type="submit" class="btn btn-add" style="padding: 20px;">Submit Order Request</button>
+    </form>
+</div>
+
+<footer>
+    <div class="footer-links">
+        <a href="#" class="footer-link">TikTok</a>
+        <a href="#" class="footer-link">WhatsApp</a>
+        <a href="#" class="footer-link">Discord</a>
+    </div>
+    <div class="legal-terms">
+        <a href="#">Terms of Service</a>
+        <a href="#">Privacy Policy</a>
+    </div>
+    <p class="copyright">© 2026 CPM Exclusive Coin Dealer. All Rights Reserved.</p>
+</footer>
+
+<script>
+    // Prevent the browser from saving the scroll position
+    if ('scrollRestoration' in history) {
+        history.scrollRestoration = 'manual';
+    }
+    // Scroll to top immediately on page load
+    window.scrollTo(0, 0);
+
+    const countries = ["Albania 🇦🇱", "Algeria 🇩🇿", "Armenia 🇦🇲", "Argentina 🇦🇷", "Australia 🇦🇺", "Austria 🇦🇹", "Azerbaijan 🇦🇿", "Bangladesh 🇧🇩", "Belgium 🇧🇪", "Bosnia & Herzegovina 🇧🇦", "Brazil 🇧🇷", "Cambodia 🇰🇭", "Chile 🇨🇱", "China 🇨🇳", "Colombia 🇨🇴", "Czech Republic 🇨🇿", "Denmark 🇩🇰", "Ecuador 🇪🇨", "Egypt 🇪🇬", "Finland 🇫🇮", "Georgia 🇬🇪", "Germany 🇩🇪", "Greece 🇬🇷", "Hungary 🇭🇺", "Iceland 🇮🇸", "India 🇮🇳", "Indonesia 🇮🇩", "Iran 🇮🇷", "Iraq 🇮🇶", "Ireland 🇮🇪", "Italy 🇮🇹", "Jamaica 🇯🇲", "Japan 🇯🇵", "Kazakhstan 🇰🇿", "Kuwait 🇰🇼", "Latvia 🇱🇻", "Lebanon 🇱🇧", "Lithuania 🇱🇹", "Malaysia 🇲🇾", "USA 🇺🇸", "Mexico 🇲🇽", "Morocco 🇲🇦", "Netherlands 🇳🇱", "Norway 🇳🇴", "Pakistan 🇵🇰", "Philippines 🇵🇭", "Portugal 🇵🇹", "Qatar 🇶🇦", "Romania 🇷🇴", "Russia 🇷🇺", "Saudi Arabia 🇸🇦", "Serbia 🇷🇸", "Singapore 🇸🇬", "Slovakia 🇸🇰", "Slovenia 🇸🇮", "South Africa 🇿🇦", "South Korea 🇰🇷", "Spain 🇪🇸", "Sweden 🇸🇪", "Switzerland 🇨🇭", "Thailand 🇹🇭", "Tunisia 🇹🇳", "Turkey 🇹🇷", "Ukraine 🇺🇦", "United Arab Emirates 🇦🇪", "United Kingdom 🇬🇧", "Uzbekistan 🇺🇿", "Vietnam 🇻🇳", "Zimbabwe 🇿🇼"];
+
+    const coinDb = [
+        { name: "Alfa Romeo Giulia Quadrifoglio", price: "500 Coins", img: "https://i.ibb.co/7N8g1fDS/image.png" },
+        { name: "Aston Martin Vantage Roadster V12", price: "1500 Coins", img: "https://i.ibb.co/bRLghhTt/ASTON-MARTIN-VANTAGE-ROADSTER-V12.jpg" },
+        { name: "Audi RS7 (2019)", price: "1000 Coins", img: "https://i.ibb.co/nqFx7RFf/RS7.jpg" },
+        { name: "Bentley Continental GT", price: "500 Coins", img: "https://i.ibb.co/VWNrj2tm/BENTLEY-CONTINENTAL-GT.jpg" },
+        { name: "BMW M4 G82 (2021)", price: "1500 Coins", img: "https://i.ibb.co/twRKk6JR/BMW-M4-G82.jpg" },
+        { name: "BMW M5 G90 (2024)", price: "1500 Coins", img: "https://i.ibb.co/tPDRB2Px/BMW-M5-G90.jpg" },
+        { name: "BMW Serie 5 Touring E34", price: "1500 Coins", img: "https://i.ibb.co/pj4Lg0Rr/BMW-SERIE-5-TOURING-E34.jpg" },
+        { name: "BMW Serie 7 (2022)", price: "1000 Coins", img: "https://i.ibb.co/PZLN7HFp/BMW-SERIE-7.jpg" },
+        { name: "BMW X7 M60i (2023)", price: "1000 Coins", img: "https://i.ibb.co/zWPmCFdC/BMW-X7-M60i.jpg" },
+        { name: "Bugatti Chiron", price: "500 Coins", img: "https://i.ibb.co/5gz4YLqy/BUGATTI-CHIRON.jpg" },
+        { name: "Cadillac Escalade V", price: "2000 Coins", img: "https://i.ibb.co/5g78r3WZ/Escalade-V.jpg" },
+        { name: "Chevrolet C/K", price: "500 Coins", img: "https://i.ibb.co/8LpmnPS4/CHEVROLET-C-K.jpg" },
+        { name: "Chevrolet Corvette C3 Stingray", price: "1500 Coins", img: "https://i.ibb.co/mnj29BK/CHEVROLET-CORVETTE-C3-STINGRAY.jpg" },
+        { name: "Chevrolet Corvette C6 ZO6", price: "500 Coins", img: "https://i.ibb.co/mV2GtthR/CHEVROLET-CORVETTE-C6-ZO6.jpg" },
+        { name: "Chevrolet Corvette C8 Stingray", price: "500 Coins", img: "https://i.ibb.co/C5pRytc1/CHEVROLET-CORVETTE-C8-STINGRAY.jpg" },
+        { name: "Chevrolet Tahoe", price: "2500 Coins", img: "https://i.ibb.co/FLF3TDRL/TAHOE.jpg" },
+        { name: "DeLorean DMC-12", price: "3000 Coins", img: "https://i.ibb.co/8n7jgWfJ/DELOREAN-DMC-12.jpg" },
+        { name: "Ferrari F40", price: "2500 Coins", img: "https://i.ibb.co/q3NjCx3N/FERRARI-F40.jpg" },
+        { name: "Ford Bronco", price: "1500 Coins", img: "https://i.ibb.co/MxGwkpTJ/BRONCO.jpg" },
+        { name: "Ford F-150 Hoonitruck", price: "1000 Coins", img: "https://i.ibb.co/Tq02WJfn/FORD-F-150-HOONITRUCK.jpg" },
+        { name: "Ford F-150 Raptor", price: "1000 Coins", img: "https://i.ibb.co/yc9DYDb1/FORD-F-150-RAPTOR.jpg" },
+        { name: "Ford Mustang Hoonicorn RTR", price: "1000 Coins", img: "https://i.ibb.co/qLsvZP7m/FORD-MUSTANG-HOONICORN-RTR.jpg" },
+        { name: "Honda CR-X", price: "1000 Coins", img: "https://i.ibb.co/chh7D3MQ/HONDA-CR-X.jpg" },
+        { name: "Honda NSX NA1", price: "1000 Coins", img: "https://i.ibb.co/27qkWRzC/HONDA-NSX-NA1.jpg" },
+        { name: "Jeep Trackhawk", price: "300 Coins", img: "https://i.ibb.co/bjHkRhSL/JEEP-GRAND-CHEROKEE-STR-TRACKHAWK-WK2.jpg" },
+        { name: "Kenworth T680", price: "1000 Coins", img: "https://i.ibb.co/MDh5MXK2/KENWORTH-T680.jpg" },
+        { name: "Kia Sprinter", price: "500 Coins", img: "https://i.ibb.co/HTZ5gW46/KIA-SPRINTER.jpg" },
+        { name: "King Long 6125", price: "1000 Coins", img: "https://i.ibb.co/p68MmsvM/KING-LONG-6125.jpg" },
+        { name: "King Long Bus", price: "1000 Coins", img: "https://i.ibb.co/DfzwrDyp/KING-LONG-BUS.jpg" },
+        { name: "Koenigsegg Jesko", price: "5000 Coins", img: "https://i.ibb.co/x8PBXdD2/KOENIGSEGG-JESKO.jpg" },
+        { name: "Land Rover Defender", price: "1000 Coins", img: "https://i.ibb.co/chxXZYQT/DEFENDER.jpg" },
+        { name: "Lexus IS 200/300", price: "500 Coins", img: "https://i.ibb.co/23QLcFC7/LEXUS-IS-200-300.jpg" },
+        { name: "McLaren 720S", price: "500 Coins", img: "https://i.ibb.co/p64bWF10/MCLAREN-720S.jpg" },
+        { name: "McLaren Senna", price: "2000 Coins", img: "https://i.ibb.co/mV8xLYcH/MCLAREN-SENNA.jpg" },
+        { name: "Mercedes-AMG One", price: "2500 Coins", img: "https://i.ibb.co/jPbhb2S9/MERCEDES-AMG-ONE.jpg" },
+        { name: "Mercedes-Benz Clase E W210", price: "500 Coins", img: "https://i.ibb.co/JRFxSSbx/MERCEDES-BENZ-CLASE-E-W210.jpg" },
+        { name: "Mercedes-Benz CLK GTR", price: "3000 Coins", img: "https://i.ibb.co/7xYW2PXz/MERCEDES-BENZ-CLK-GTR.jpg" },
+        { name: "Mercedes-Benz G63 6X6", price: "2000 Coins", img: "https://i.ibb.co/VWG4nsp1/MERCEDES-BENZ-G63-AMG-6X6.jpg" },
+        { name: "Mercedes-Benz SLR McLaren", price: "2000 Coins", img: "https://i.ibb.co/gLT3tCr0/MERCEDES-BENZ-SLR-MCLAREN.jpg" },
+        { name: "Mercedes-Maybach S", price: "3000 Coins", img: "https://i.ibb.co/TSSBWS2/MAYBACH-S.jpg" },
+        { name: "Mitsubishi Eclipse 2G", price: "500 Coins", img: "https://i.ibb.co/N6MrTSCZ/MITSUBISHI-ECLIPSE-2G.jpg" },
+        { name: "Nissan Fairlady Z", price: "3000 Coins", img: "https://i.ibb.co/0yJ2911Z/NISSAN-FAIRLADY-Z-DATSUN-240Z.jpg" },
+        { name: "Nissan Skyline R33", price: "1000 Coins", img: "https://i.ibb.co/rRG4GThM/NISSAN-SKYLINE-R33.jpg" },
+        { name: "Pagani Zonda F", price: "5000 Coins", img: "https://i.ibb.co/DDRL33wm/PAGANI-ZONDA-F.jpg" },
+        { name: "Porsche 911 GT3 RS", price: "5000 Coins", img: "https://i.ibb.co/B54nQfQb/PORSHE-911-GT3-RS-992.jpg" },
+        { name: "Porsche 918 Spyder", price: "1000 Coins", img: "https://i.ibb.co/WNBMJPkz/PORSHE-918-SPYDER.jpg" },
+        { name: "Porsche 919 Hybrid", price: "3000 Coins", img: "https://i.ibb.co/nM6C9dPY/PORSHE-919-HYBRID.jpg" },
+        { name: "Porsche Carrera GT", price: "3500 Coins", img: "https://i.ibb.co/wZwyN5VS/PORSHE-CARRERA-GT.jpg" },
+        { name: "Porsche Carrera RS 993", price: "1000 Coins", img: "https://i.ibb.co/zkdnt25/PORSHE-CARRERA-RS-993.jpg" },
+        { name: "RAM 1500 TRX", price: "1000 Coins", img: "https://i.ibb.co/h1sFFXgH/RAM-1500-TRX.jpg" },
+        { name: "Range Rover L460", price: "2500 Coins", img: "https://i.ibb.co/84mR54dP/LAND-ROVER-RANGE-ROVER-L460.jpg" },
+        { name: "Smart Fortwo W451", price: "1000 Coins", img: "https://i.ibb.co/whdkrQ2P/SMART-FORTWO-W451.jpg" },
+        { name: "Subaru WRX STI", price: "1000 Coins", img: "https://i.ibb.co/R4jfdKDd/SUBARU.jpg" },
+        { name: "Toyota Altezza", price: "500 Coins", img: "https://i.ibb.co/PsCds4pQ/TOYOTA-ALTEZZA.jpg" },
+        { name: "Toyota Chaser JZX100", price: "1000 Coins", img: "https://i.ibb.co/mVw20Yf3/TOYOTA-CHASER-JZX100.jpg" },
+        { name: "Volkswagen Passat", price: "1000 Coins", img: "https://i.ibb.co/mCbH1519/PASSAT.jpg" }
+    ];
+
+    let basket = [];
+    let activeModCar = null;
+    let currentSort = 'name-asc';
+    let selectedFlagTemp = null;
+
+    // Load Flags into UI
+    function loadFlagGrid() {
+        const grid = document.getElementById('flag-grid');
+        grid.innerHTML = '';
+        countries.forEach(c => {
+            const div = document.createElement('div');
+            div.className = 'flag-item';
+            div.innerText = c;
+            div.onclick = () => {
+                document.querySelectorAll('.flag-item').forEach(i => i.classList.remove('selected'));
+                div.classList.add('selected');
+                selectedFlagTemp = c;
+                document.getElementById('current-selection').innerText = "Selected: " + c;
+            };
+            grid.appendChild(div);
+        });
+    }
+
+    function toggleFlagPicker() {
+        const checked = document.getElementById('mod-flag').checked;
+        document.getElementById('flag-picker-ui').style.display = checked ? 'block' : 'none';
+        if(checked) loadFlagGrid();
+    }
+
+    function filterAndRender() {
+        const query = document.getElementById('searchBar').value.toLowerCase();
+        let filtered = coinDb.filter(c => c.name.toLowerCase().includes(query));
+        filtered.sort((a, b) => {
+            const pA = parseInt(a.price); const pB = parseInt(b.price);
+            if (currentSort === 'name-asc') return a.name.localeCompare(b.name);
+            if (currentSort === 'name-desc') return b.name.localeCompare(a.name);
+            if (currentSort === 'price-asc') return pA - pB;
+            if (currentSort === 'price-desc') return pB - pA;
+        });
+        const listEl = document.getElementById('car-list');
+        listEl.innerHTML = '';
+        filtered.forEach(car => {
+            const card = document.createElement('div');
+            card.className = 'car-card';
+            card.innerHTML = `<div class="car-image-container"><img src="${car.img}"></div>
+                <div><h3>${car.name}</h3><div class="coin-price">${car.price}</div></div>
+                <div><button class="btn btn-add" onclick="directAdd('${car.name}', '${car.price}')">Add To Cart</button>
+                <button class="btn btn-mod" onclick="openMod('${car.name}', '${car.price}')">Modify</button></div>`;
+            listEl.appendChild(card);
+        });
+    }
+
+    function setSort(t) { currentSort = t; document.querySelectorAll('.sort-btn').forEach(b => b.classList.remove('active')); document.getElementById(`sort-${t}`).classList.add('active'); filterAndRender(); }
+
+    function calculateTotalRands(count) {
+        if (count === 0) return 0;
+        let total = 10;
+        for (let i = 2; i <= count; i++) { total += (i <= 4) ? 5 : 4; }
+        return total;
+    }
+
+    function triggerBounce() {
+        const cartBtn = document.getElementById('floating-basket');
+        cartBtn.classList.remove('bounce-anim');
+        void cartBtn.offsetWidth; // Trigger reflow
+        cartBtn.classList.add('bounce-anim');
+    }
+
+    function updateBasket() {
+        const content = document.getElementById('basket-content');
+        content.innerHTML = ''; let coins = 0;
+        basket.forEach((item, i) => {
+            coins += parseInt(item.price);
+            const div = document.createElement('div');
+            div.className = 'basket-item';
+            div.innerHTML = `<span><strong>${item.name}</strong><br><small style="color:#aaa;">${item.mods.length > 0 ? 'Mods: ' + item.mods.join(', ') : 'Stock'}</small></span>
+                             <button class="btn-remove" onclick="basket.splice(${i},1); updateBasket()">X</button>`;
+            content.appendChild(div);
+        });
+        const count = basket.length;
+        const rands = calculateTotalRands(count);
+        document.getElementById('badge-count').innerText = count;
+        document.getElementById('total-coins').innerText = coins.toLocaleString() + " Total Value";
+        document.getElementById('total-rands').innerText = "R" + rands;
+        document.getElementById('floating-basket').style.display = count > 0 ? 'flex' : 'none';
+        const sav = (count * 10) - rands;
+        document.getElementById('savings-display').innerText = sav > 0 ? "Bulk Saving: R" + sav : "";
+    }
+
+    function openMod(name, price) {
+        activeModCar = { name, price };
+        selectedFlagTemp = null;
+        document.getElementById('current-selection').innerText = "No flag selected";
+        document.getElementById('mod-flag').checked = false;
+        document.getElementById('flag-picker-ui').style.display = 'none';
+        document.getElementById('mod-modal').style.display = 'block';
+        document.getElementById('overlay').style.display = 'block';
+    }
+
+    function closeMod() { document.getElementById('mod-modal').style.display = 'none'; document.getElementById('overlay').style.display = 'none'; }
+    function scrollToBasket() { document.getElementById('basket').scrollIntoView({ behavior: 'smooth' }); }
+    
+    function directAdd(name, price) { 
+        basket.push({ name, price, mods: [] }); 
+        updateBasket(); 
+        triggerBounce();
+    }
+    
+    function clearBasket() { if(confirm("Clear Order?")) { basket = []; updateBasket(); } }
+
+    function confirmMod() {
+        const mods = [];
+        if(document.getElementById('mod-w16').checked) mods.push("W16");
+        if(document.getElementById('mod-bodykit').checked) mods.push("Bodykit");
+        if(document.getElementById('mod-flag').checked && selectedFlagTemp) mods.push("Flag: " + selectedFlagTemp);
+        basket.push({ ...activeModCar, mods });
+        updateBasket();
+        closeMod();
+        triggerBounce();
+    }
+
+    // Handle form submission
+    document.getElementById('dealer-form').onsubmit = function(e) {
+        e.preventDefault();
+        
+        if (basket.length === 0) {
+            alert("Your basket is empty!");
+            return;
+        }
+
+        const ign = document.getElementById('u-name').value;
+        const contact = document.getElementById('u-contact').value;
+        const totalRands = document.getElementById('total-rands').innerText;
+        
+        alert(`Thank you, ${ign}!\nYour order for ${basket.length} cars has been prepared.\nTotal: ${totalRands}\nWe will reach out to you via ${contact} shortly.`);
+        
+        // Clear after submitting
+        basket = [];
+        updateBasket();
+        this.reset();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    filterAndRender();
+</script>
+</body>
+</html>
