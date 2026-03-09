@@ -215,9 +215,11 @@
         <div id="savings-display" style="color:var(--success); font-size:0.8rem; margin-top:5px;"></div>
     </div>
 
-    <form id="dealer-form">
-        <input type="text" id="u-name" placeholder="In-game Name (IGN)" required style="width: 100%; padding: 12px; margin: 10px 0 5px 0; background: #000; color: white; border: 1px solid #444; border-radius: 8px;">
-        <input type="text" id="u-contact" placeholder="Contact Details (WhatsApp/Discord Username)" required style="width: 100%; padding: 12px; margin: 5px 0 10px 0; background: #000; color: white; border: 1px solid #444; border-radius: 8px;">
+    <form id="dealer-form" name="dealer-form" method="POST" data-netlify="true">
+        <input type="hidden" name="form-name" value="dealer-form" />
+        <input type="hidden" name="order-details" id="order-details" value="" />
+        <input type="text" id="u-name" name="ign" placeholder="In-game Name (IGN)" required style="width: 100%; padding: 12px; margin: 10px 0 5px 0; background: #000; color: white; border: 1px solid #444; border-radius: 8px;">
+        <input type="text" id="u-contact" name="contact" placeholder="Contact Details (WhatsApp/Discord Username)" required style="width: 100%; padding: 12px; margin: 5px 0 10px 0; background: #000; color: white; border: 1px solid #444; border-radius: 8px;">
         <button type="submit" class="btn btn-add" style="padding: 20px;">Submit Order Request</button>
     </form>
 </div>
@@ -426,7 +428,7 @@
     }
 
     // Handle form submission
-    document.getElementById('dealer-form').onsubmit = function(e) {
+    document.getElementById('dealer-form').onsubmit = async function(e) {
         e.preventDefault();
         
         if (basket.length === 0) {
@@ -438,13 +440,40 @@
         const contact = document.getElementById('u-contact').value;
         const totalRands = document.getElementById('total-rands').innerText;
         
-        alert(`Thank you, ${ign}!\nYour order for ${basket.length} cars has been prepared.\nTotal: ${totalRands}\nWe will reach out to you via ${contact} shortly.`);
-        
-        // Clear after submitting
-        basket = [];
-        updateBasket();
-        this.reset();
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        // Prepare order details
+        let orderDetails = `Total: ${totalRands}\n\nItems:\n`;
+        basket.forEach((item, i) => {
+            orderDetails += `${i+1}. ${item.name} (${item.price})\n`;
+            if (item.mods && item.mods.length > 0) {
+                orderDetails += `   Mods: ${item.mods.join(', ')}\n`;
+            }
+        });
+        document.getElementById('order-details').value = orderDetails;
+
+        const form = e.target;
+        const formData = new FormData(form);
+
+        try {
+            const response = await fetch('/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: new URLSearchParams(formData).toString(),
+            });
+
+            if (response.ok) {
+                alert(`Thank you, ${ign}!\nYour order for ${basket.length} cars has been prepared.\nTotal: ${totalRands}\nWe will reach out to you via ${contact} shortly.`);
+                
+                // Clear after submitting
+                basket = [];
+                updateBasket();
+                form.reset();
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            } else {
+                alert("There was an issue submitting your request. Please try again.");
+            }
+        } catch (error) {
+            alert("There was an issue submitting your request. Please try again.");
+        }
     };
 
     filterAndRender();
