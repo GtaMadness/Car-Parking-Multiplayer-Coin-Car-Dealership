@@ -10,7 +10,7 @@ class BT:
         self.SP=df.spread.values*0.001; self.HR=df.t.dt.hour.values
         ev=events(); self.ev=ev
         self.newsday={}; [self.newsday.setdefault(np.datetime64(r.day),[]).append((r.event,np.datetime64(r.time_gmt2))) for r in ev.itertuples()]
-    def run(self,start='2025-08-01',end=None,pct=0.30,rr=1.5,expiry='day',flt='contract',news='none',hours=None,be=None,eod=False,trend=None,news_wait=15):
+    def run(self,start='2025-08-01',end=None,pct=0.30,rr=1.5,expiry='day',flt='contract',news='none',hours=None,be=None,eod=False,trend=None,news_wait=15,gap_skip=False,gap='fill'):
         D=self.daily; T,DAY,O,H,L,C,SP,HR=self.T,self.DAY,self.O,self.H,self.L,self.C,self.SP,self.HR
         s=np.searchsorted(DAY,np.datetime64(pd.Timestamp(start))); e=len(DAY) if end is None else np.searchsorted(DAY,np.datetime64(pd.Timestamp(end)),'right')
         trades=[]; pend=None; pos=None; prev=None; active_from=None
@@ -30,10 +30,18 @@ class BT:
                     ok=not np.isnan(p.atr14)
                     if flt in('contract','contract+trend') and not p['range']<p.atr14: ok=False
                     if news=='skip_day' and nd: ok=False
+                    if gap_skip and ok and (O[i]>p.high or O[i]<p.low): ok=False   # day opened outside the previous range: no trade
                     if news=='skip_ref' and self.newsday.get(np.datetime64(p.name)): ok=False
                     ab=as_=True
                     tr=trend or ('sma20' if flt=='contract+trend' else None)
                     if tr: ab=p.close>p[tr]; as_=not ab
+                    if ok and gap!='fill':
+                        gu=O[i]>p.high; gd=O[i]<p.low   # day opened beyond the previous range
+                        if gap=='skip_day' and (gu or gd): ok=False
+                        if gap=='skip_side':
+                            if gu: ab=False
+                            if gd: as_=False
+                            if not(ab or as_): ok=False
                     if ok:
                         pend=dict(placed=pd.Timestamp(dd),ref=p.name,H=p.high,L=p.low,rng=p['range'],atr=p.atr14,dist=pct*p['range'],ab=ab,as_=as_,
                                   ref_news=','.join(x[0] for x in self.newsday.get(np.datetime64(p.name),[])),day_news=','.join(x[0] for x in nd))
